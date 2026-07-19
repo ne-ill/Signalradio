@@ -6,40 +6,49 @@
 <title>Signal — 20,000+ live radio stations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
-    --bg:#0A0C10;
-    --panel:#14171F;
-    --panel-2:#1B1F2A;
-    --amber:#FFB347;
+    --bg:#05060B;
+    --bg-2:#0A0D18;
+    --panel:rgba(255,255,255,0.045);
+    --panel-2:rgba(255,255,255,0.075);
+    --glass-border:rgba(255,255,255,0.10);
+    --glass-border-strong:rgba(255,255,255,0.20);
+    --amber:#FFB454;
     --amber-dim:#8A5F26;
     --teal:#2DD4BF;
-    --text:#EDEAE0;
-    --muted:#767C8A;
-    --line:#242835;
-    --danger:#E8654F;
-    --radius:14px;
+    --violet:#8B7CFF;
+    --rose:#FF6F97;
+    --text:#F5F3ED;
+    --muted:#8A90A6;
+    --line:rgba(255,255,255,0.09);
+    --danger:#FF6B6B;
+    --radius:18px;
+    --radius-sm:12px;
+    --shadow-glass:0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html,body{height:100%;}
+  html{scroll-behavior:smooth;}
   body{
-    background:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,179,71,0.07), transparent),
-      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(45,212,191,0.06), transparent),
-      var(--bg);
+    background:var(--bg);
     color:var(--text);
     font-family:'Space Grotesk', sans-serif;
     min-height:100%;
-    padding-bottom:96px;
+    padding-bottom:112px;
+    position:relative;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
   }
   @media (prefers-reduced-motion: reduce){
     *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
   }
   .mono{font-family:'JetBrains Mono', monospace;}
+  .display{font-family:'Sora', 'Space Grotesk', sans-serif;}
   a,button{font-family:inherit; color:inherit;}
   button{cursor:pointer; border:none; background:none;}
   button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible{
@@ -47,32 +56,124 @@
   }
   ::selection{background:var(--amber); color:#1a1200;}
 
-  /* ---------- Header ---------- */
+  /* ============ Ambient background system ============ */
+  .aurora-bg{
+    position:fixed; inset:0; z-index:-2; overflow:hidden; background:var(--bg);
+  }
+  .aurora-bg::after{
+    content:''; position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 1000px 600px at 8% -8%, rgba(255,180,84,0.10), transparent 60%),
+      radial-gradient(ellipse 900px 700px at 100% 0%, rgba(45,212,191,0.09), transparent 60%),
+      radial-gradient(ellipse 1200px 900px at 50% 120%, rgba(139,124,255,0.08), transparent 60%);
+  }
+  .aurora{
+    position:absolute; border-radius:50%; filter:blur(90px); opacity:0.55; mix-blend-mode:screen;
+    will-change:transform;
+  }
+  .aurora.a1{
+    width:640px; height:640px; top:-220px; left:-160px;
+    background:radial-gradient(circle, rgba(255,180,84,0.55), transparent 70%);
+    animation:auroraDrift1 26s ease-in-out infinite;
+  }
+  .aurora.a2{
+    width:560px; height:560px; top:-120px; right:-180px;
+    background:radial-gradient(circle, rgba(45,212,191,0.5), transparent 70%);
+    animation:auroraDrift2 32s ease-in-out infinite;
+  }
+  .aurora.a3{
+    width:700px; height:700px; bottom:-320px; left:30%;
+    background:radial-gradient(circle, rgba(139,124,255,0.45), transparent 70%);
+    animation:auroraDrift3 38s ease-in-out infinite;
+  }
+  @keyframes auroraDrift1{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(60px,40px) scale(1.12);}
+  }
+  @keyframes auroraDrift2{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(-70px,50px) scale(1.08);}
+  }
+  @keyframes auroraDrift3{
+    0%,100%{transform:translate(-50%,0) scale(1);}
+    50%{transform:translate(-50%,-40px) scale(1.15);}
+  }
+  #particles-canvas{
+    position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:0.5;
+  }
+  .grain{
+    position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:0.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  .vignette{
+    position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:radial-gradient(ellipse 1400px 1000px at 50% 40%, transparent 55%, rgba(0,0,0,0.55));
+  }
+
+  /* ============ Loading screen ============ */
+  #loading-screen{
+    position:fixed; inset:0; z-index:9999; background:var(--bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    transition:opacity .7s ease, visibility .7s ease;
+  }
+  #loading-screen.done{opacity:0; visibility:hidden; pointer-events:none;}
+  .loading-core{position:relative; width:120px; height:120px; display:flex; align-items:center; justify-content:center;}
+  .loading-core .ring{
+    position:absolute; border-radius:50%; border:1px solid var(--glass-border-strong);
+  }
+  .loading-core .r1{width:120px; height:120px; animation:loadSpin 3s linear infinite;}
+  .loading-core .r2{width:88px; height:88px; border-color:rgba(255,180,84,0.35); animation:loadSpin 2.2s linear infinite reverse;}
+  .loading-core .r3{width:56px; height:56px; border-color:rgba(45,212,191,0.4); animation:loadSpin 1.6s linear infinite;}
+  @keyframes loadSpin{to{transform:rotate(360deg);}}
+  .loading-mark{
+    width:16px; height:16px; border-radius:50%; background:var(--amber);
+    box-shadow:0 0 24px rgba(255,180,84,0.9), 0 0 60px rgba(255,180,84,0.5);
+    animation:corePulse 1.6s ease-in-out infinite;
+  }
+  @keyframes corePulse{0%,100%{transform:scale(1); opacity:1;} 50%{transform:scale(1.35); opacity:0.7;}}
+  .loading-word{font-family:'Sora', sans-serif; font-size:22px; font-weight:700; letter-spacing:0.14em;}
+  .loading-word span{color:var(--amber);}
+  .loading-sub{font-size:12px; color:var(--muted); letter-spacing:0.06em;}
+
+  /* ============ Header ============ */
   header.topbar{
     display:flex; align-items:center; gap:20px;
-    padding:22px clamp(16px,4vw,40px) 14px;
+    padding:20px clamp(16px,4vw,40px) 14px;
     flex-wrap:wrap;
+    position:sticky; top:0; z-index:40;
+  }
+  header.topbar::before{
+    content:''; position:absolute; inset:0 0 0 0; height:100%;
+    backdrop-filter:blur(18px) saturate(160%); -webkit-backdrop-filter:blur(18px) saturate(160%);
+    background:linear-gradient(180deg, rgba(6,8,14,0.72), rgba(6,8,14,0.35));
+    border-bottom:1px solid var(--glass-border);
+    z-index:-1;
   }
   .logo{display:flex; align-items:center; gap:10px;}
   .logo .mark{
-    width:34px; height:34px; border-radius:50%;
-    border:2px solid var(--amber);
+    width:36px; height:36px; border-radius:50%;
+    border:1.5px solid var(--amber);
     display:flex; align-items:center; justify-content:center;
     position:relative;
-    box-shadow:0 0 14px rgba(255,179,71,0.35);
+    box-shadow:0 0 18px rgba(255,180,84,0.4), inset 0 0 12px rgba(255,180,84,0.15);
+    animation:logoBreathe 3.4s ease-in-out infinite;
   }
+  @keyframes logoBreathe{0%,100%{box-shadow:0 0 18px rgba(255,180,84,0.4), inset 0 0 12px rgba(255,180,84,0.15);} 50%{box-shadow:0 0 26px rgba(255,180,84,0.65), inset 0 0 16px rgba(255,180,84,0.25);}}
   .logo .mark::before{
     content:''; width:8px; height:8px; border-radius:50%;
     background:var(--amber); box-shadow:0 0 8px var(--amber);
   }
-  .logo .wordmark{font-size:20px; font-weight:700; letter-spacing:0.06em;}
+  .logo .wordmark{font-family:'Sora', sans-serif; font-size:19px; font-weight:700; letter-spacing:0.08em;}
   .logo .wordmark span{color:var(--amber);}
   .search-wrap{
     flex:1 1 320px; min-width:220px;
     display:flex; align-items:center; gap:10px;
-    background:var(--panel); border:1px solid var(--line);
-    border-radius:999px; padding:10px 18px;
+    background:var(--panel); border:1px solid var(--glass-border);
+    backdrop-filter:blur(12px);
+    border-radius:999px; padding:11px 20px;
+    transition:border-color .2s ease, background .2s ease;
   }
+  .search-wrap:focus-within{border-color:rgba(255,180,84,0.5); background:var(--panel-2);}
   .search-wrap svg{flex-shrink:0; opacity:0.55;}
   .search-wrap input{
     flex:1; background:none; border:none; color:var(--text);
@@ -85,68 +186,202 @@
   }
   .stats-readout b{color:var(--teal); font-weight:600;}
 
-  /* ---------- Jam ---------- */
+  /* ============ Jam ============ */
   .jam-btn{
-    padding:8px 14px; border-radius:999px; border:1px solid var(--line);
-    background:var(--panel); font-family:'JetBrains Mono', monospace; font-size:12px;
+    padding:9px 15px; border-radius:999px; border:1px solid var(--glass-border);
+    background:var(--panel); backdrop-filter:blur(10px);
+    font-family:'JetBrains Mono', monospace; font-size:12px;
     color:var(--muted); display:flex; align-items:center; gap:7px; flex-shrink:0;
-    transition:all .15s ease;
+    transition:all .2s ease;
   }
-  .jam-btn:hover{color:var(--text); border-color:#3A4152;}
-  .jam-btn.active{border-color:var(--teal); color:var(--teal); box-shadow:0 0 10px rgba(45,212,191,0.25);}
+  .jam-btn:hover{color:var(--text); border-color:var(--glass-border-strong);}
+  .jam-btn.active{border-color:var(--teal); color:var(--teal); box-shadow:0 0 16px rgba(45,212,191,0.3);}
   .jam-btn .pulse-dot{width:6px; height:6px; border-radius:50%; background:var(--teal); box-shadow:0 0 6px var(--teal); display:none;}
   .jam-btn.active .pulse-dot{display:block; animation:pulseDot 1.4s ease-in-out infinite;}
   @keyframes pulseDot{0%,100%{opacity:1;} 50%{opacity:0.25;}}
 
   .jam-panel{
-    padding:0 clamp(16px,4vw,40px); background:var(--panel);
-    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
-    max-height:0; overflow:hidden; transition:max-height .25s ease, padding .25s ease;
+    padding:0 clamp(16px,4vw,40px); background:rgba(10,13,24,0.6); backdrop-filter:blur(18px);
+    border-top:1px solid var(--glass-border); border-bottom:1px solid var(--glass-border);
+    max-height:0; overflow:hidden; transition:max-height .35s cubic-bezier(.4,0,.2,1), padding .35s ease;
   }
-  .jam-panel.open{ padding:16px clamp(16px,4vw,40px); max-height:220px; }
-  .jam-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;}
+  .jam-panel.open{ padding:20px clamp(16px,4vw,40px); max-height:420px; }
+  .jam-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px;}
   .jam-row:last-child{margin-bottom:0;}
   .jam-input{
-    background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
-    padding:9px 12px; font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--text);
+    background:var(--panel-2); border:1px solid var(--glass-border); border-radius:9px;
+    padding:10px 12px; font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--text);
     width:110px; text-transform:uppercase; letter-spacing:0.08em;
   }
-  .jam-code-display{font-family:'JetBrains Mono', monospace; font-size:26px; font-weight:600; letter-spacing:0.12em; color:var(--teal);}
-  .jam-btn-solid{background:var(--teal); color:#03211d; font-weight:600; font-size:12px; padding:9px 16px; border-radius:8px;}
-  .jam-btn-solid:hover{filter:brightness(1.1);}
-  .jam-btn-outline{border:1px solid var(--line); color:var(--text); font-size:12px; padding:9px 16px; border-radius:8px;}
+  .jam-input:focus{border-color:var(--teal);}
+  .jam-code-display{font-family:'JetBrains Mono', monospace; font-size:28px; font-weight:600; letter-spacing:0.14em; color:var(--teal); text-shadow:0 0 20px rgba(45,212,191,0.5);}
+  .jam-btn-solid{background:linear-gradient(135deg, var(--teal), #1fae9c); color:#03211d; font-weight:600; font-size:12px; padding:10px 18px; border-radius:9px; box-shadow:0 4px 18px rgba(45,212,191,0.25);}
+  .jam-btn-solid:hover{filter:brightness(1.12); transform:translateY(-1px);}
+  .jam-btn-outline{border:1px solid var(--glass-border); color:var(--text); font-size:12px; padding:10px 18px; border-radius:9px; background:rgba(255,255,255,0.02);}
+  #signin-btn{padding:8px 14px; font-size:11px;}
+  #signin-btn:disabled{color:var(--teal); border-color:var(--teal); opacity:0.8; cursor:default;}
   .jam-btn-outline:hover{border-color:var(--danger); color:var(--danger);}
   .jam-btn-outline.safe:hover{border-color:var(--teal); color:var(--teal);}
   .jam-desc{font-size:11px; color:var(--muted); max-width:480px; line-height:1.5;}
   .jam-listeners{font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--muted);}
   .jam-listeners b{color:var(--teal);}
-  .jam-divider{width:1px; height:26px; background:var(--line);}
+  .jam-divider{width:1px; height:26px; background:var(--glass-border);}
 
-  /* ---------- Dial ---------- */
-  .dial-section{padding:6px clamp(16px,4vw,40px) 8px;}
+  /* --- Live signal globe (jam visual) --- */
+  .jam-globe-wrap{
+    display:flex; align-items:center; gap:18px; margin-top:4px; padding-top:14px;
+    border-top:1px dashed var(--glass-border); flex-wrap:wrap;
+  }
+  .jam-globe{
+    position:relative; width:84px; height:84px; border-radius:50%; flex-shrink:0;
+    background:radial-gradient(circle at 32% 28%, rgba(45,212,191,0.25), rgba(10,13,24,0.6) 70%);
+    border:1px solid var(--glass-border-strong);
+    box-shadow:0 0 24px rgba(45,212,191,0.15), inset 0 0 20px rgba(0,0,0,0.4);
+    overflow:hidden;
+  }
+  .jam-globe::before, .jam-globe::after{
+    content:''; position:absolute; border:1px solid rgba(255,255,255,0.09); border-radius:50%;
+  }
+  .jam-globe::before{inset:14% 0; animation:globeSpin 9s linear infinite;}
+  .jam-globe::after{inset:0 24%; animation:globeSpin 7s linear infinite reverse;}
+  @keyframes globeSpin{from{transform:rotateX(70deg) rotate(0deg);} to{transform:rotateX(70deg) rotate(360deg);}}
+  .globe-pulses{position:absolute; inset:0;}
+  .signal-pulse{
+    position:absolute; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%;
+    background:var(--teal); box-shadow:0 0 6px var(--teal);
+    animation:signalPing 2.2s ease-out infinite;
+  }
+  .signal-pulse::after{
+    content:''; position:absolute; inset:-6px; border-radius:50%; border:1px solid var(--teal);
+    animation:signalRipple 2.2s ease-out infinite;
+  }
+  @keyframes signalPing{0%,100%{opacity:0.5;} 50%{opacity:1;}}
+  @keyframes signalRipple{0%{transform:scale(0.3); opacity:0.8;} 100%{transform:scale(2.6); opacity:0;}}
+  .jam-globe-caption{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--muted); line-height:1.6;}
+  .jam-globe-caption b{color:var(--text); font-weight:600;}
+
+  /* ============ Orbit hero (signature element) ============ */
+  .orbit-section{padding:10px clamp(16px,4vw,40px) 4px; display:flex; justify-content:center;}
+  .orbit-stage{
+    position:relative; width:100%; max-width:640px; height:230px;
+    display:flex; align-items:center; justify-content:center;
+    --orbit-speed:26s;
+  }
+  .orbit-globe{
+    position:absolute; width:150px; height:150px; border-radius:50%;
+    background:radial-gradient(circle at 34% 30%, rgba(139,124,255,0.16), rgba(6,8,14,0.5) 68%);
+    border:1px solid var(--glass-border);
+    box-shadow:0 0 50px rgba(139,124,255,0.12), inset 0 0 30px rgba(0,0,0,0.5);
+  }
+  .orbit-globe::before{
+    content:''; position:absolute; inset:10%; border-radius:50%;
+    border:1px dashed rgba(255,255,255,0.10);
+    animation:loadSpin 40s linear infinite;
+  }
+  .orbit-globe::after{
+    content:''; position:absolute; inset:0; border-radius:50%;
+    background:repeating-linear-gradient(0deg, transparent 0 8px, rgba(255,255,255,0.025) 8px 9px);
+    -webkit-mask-image:radial-gradient(circle, black 60%, transparent 100%);
+    mask-image:radial-gradient(circle, black 60%, transparent 100%);
+  }
+  .orbit-ring{
+    position:absolute; border-radius:50%; border:1px solid var(--glass-border);
+  }
+  .orbit-ring.outer{width:340px; height:340px; animation:loadSpin 90s linear infinite;}
+  .orbit-ring.inner{width:230px; height:230px; border-style:dashed; opacity:0.5; animation:loadSpin 60s linear infinite reverse;}
+  .orbit-core{
+    position:absolute; width:14px; height:14px; border-radius:50%; background:var(--amber);
+    box-shadow:0 0 20px rgba(255,180,84,0.9), 0 0 50px rgba(255,180,84,0.4);
+    animation:corePulse 2.4s ease-in-out infinite;
+    transition:box-shadow .4s ease;
+  }
+  .orbit-stage.is-playing .orbit-core{
+    box-shadow:0 0 28px rgba(255,180,84,1), 0 0 80px rgba(255,180,84,0.6);
+  }
+  .orbit-stage.is-playing{--orbit-speed:11s;}
+  .orbit-path-outer{
+    position:absolute; inset:0;
+    animation:orbitRotate var(--orbit-speed) linear infinite;
+    transition:animation-duration .6s ease;
+  }
+  @keyframes orbitRotate{to{transform:rotate(360deg);}}
+  .orbit-card-wrap{
+    position:absolute; top:-4px; left:50%; transform:translateX(-50%);
+    animation:orbitCounter var(--orbit-speed) linear infinite;
+    transition:animation-duration .6s ease;
+  }
+  @keyframes orbitCounter{to{transform:translateX(-50%) rotate(-360deg);}}
+  .orbit-card{
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel); border:1px solid var(--glass-border-strong);
+    backdrop-filter:blur(16px) saturate(160%);
+    border-radius:16px; padding:9px 16px 9px 9px;
+    box-shadow:var(--shadow-glass);
+    min-width:190px;
+    transition:box-shadow .4s ease, border-color .4s ease;
+  }
+  .orbit-stage.is-playing .orbit-card{
+    border-color:rgba(45,212,191,0.5); box-shadow:0 0 30px rgba(45,212,191,0.25), var(--shadow-glass);
+  }
+  .orbit-cover{
+    width:38px; height:38px; border-radius:10px; flex-shrink:0; overflow:hidden; position:relative;
+    background:linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  }
+  .orbit-cover img{width:100%; height:100%; object-fit:cover; position:absolute; inset:0;}
+  .orbit-eyebrow{font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted);}
+  .orbit-name{font-size:13px; font-weight:600; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  @media (max-width:640px){
+    .orbit-stage{height:190px; transform:scale(0.82);}
+  }
+
+  /* ---- Orbit satellites: multiple small floating station cards on the ring ---- */
+  .orbit-satellites{position:absolute; inset:0; animation:orbitRotate 42s linear infinite; transition:animation-duration .6s ease;}
+  .orbit-stage.is-playing .orbit-satellites{animation-duration:19s;}
+  .orbit-sat{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(var(--a,0deg)) translateX(var(--r,150px));}
+  .orbit-sat-counter{animation:orbitCounter 42s linear infinite; transition:animation-duration .6s ease;}
+  .orbit-stage.is-playing .orbit-sat-counter{animation-duration:19s;}
+  .orbit-mini-card{
+    width:40px; height:40px; border-radius:12px; padding:0; border:1px solid var(--glass-border);
+    background:var(--panel); backdrop-filter:blur(14px) saturate(160%); overflow:hidden; position:relative;
+    box-shadow:var(--shadow-glass); transition:transform .25s ease, border-color .3s ease, box-shadow .3s ease;
+  }
+  .orbit-mini-card:hover{transform:scale(1.18); border-color:var(--glass-border-strong);}
+  .orbit-mini-card.playing{border-color:var(--teal); box-shadow:0 0 18px rgba(45,212,191,0.45);}
+  .orbit-mini-cover{position:absolute; inset:0; display:block;}
+  .orbit-mini-cover img{width:100%; height:100%; object-fit:cover; position:absolute; inset:0;}
+  @media (max-width:640px){
+    .orbit-sat{transform:translate(-50%,-50%) rotate(var(--a,0deg)) translateX(calc(var(--r,150px) * 0.78));}
+    .orbit-mini-card{width:32px; height:32px; border-radius:9px;}
+  }
+
+  /* ============ Dial ============ */
+  .dial-section{padding:14px clamp(16px,4vw,40px) 8px;}
   .dial-header{
     display:flex; justify-content:space-between; align-items:baseline;
     margin-bottom:10px; flex-wrap:wrap; gap:6px;
   }
-  .dial-header h2{font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); font-weight:600;}
+  .dial-header h2{font-family:'Sora',sans-serif; font-size:12px; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); font-weight:700;}
   .lcd{
     font-family:'JetBrains Mono', monospace; font-size:13px;
     color:var(--teal); display:flex; align-items:center; gap:10px;
   }
-  .lcd .freq{font-size:16px; font-weight:600;}
+  .lcd .freq{font-size:16px; font-weight:600; text-shadow:0 0 12px rgba(45,212,191,0.5);}
   .lcd .name{color:var(--text); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .tune-btn{
-    background:var(--teal); color:#03211d; font-weight:600; font-size:12px;
-    padding:5px 12px; border-radius:999px; letter-spacing:0.03em;
-    transition:transform .15s ease;
+    background:linear-gradient(135deg, var(--teal), #1fae9c); color:#03211d; font-weight:600; font-size:12px;
+    padding:6px 14px; border-radius:999px; letter-spacing:0.03em;
+    transition:transform .15s ease, box-shadow .15s ease;
+    box-shadow:0 4px 16px rgba(45,212,191,0.2);
   }
-  .tune-btn:hover{transform:scale(1.05);}
+  .tune-btn:hover{transform:scale(1.06);}
   .tune-btn:disabled{opacity:0.35; cursor:default;}
 
   .dial-frame{
-    position:relative; height:108px; border-radius:var(--radius);
-    background:linear-gradient(180deg, #10131A, #0C0E13);
-    border:1px solid var(--line);
+    position:relative; height:112px; border-radius:var(--radius);
+    background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
+    backdrop-filter:blur(20px) saturate(160%);
+    border:1px solid var(--glass-border-strong);
+    box-shadow:var(--shadow-glass);
     overflow:hidden;
   }
   .dial-viewport{
@@ -160,942 +395,4 @@
     background-image:
       repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 40px);
   }
-  .tick{
-    position:absolute; bottom:0; width:1px; height:14px; background:var(--line);
-  }
-  .tick.major{height:22px; background:#3A4152;}
-  .tick-label{
-    position:absolute; bottom:26px; transform:translateX(-50%);
-    font-family:'JetBrains Mono', monospace; font-size:9px; color:var(--muted);
-  }
-  .station-marker{
-    position:absolute; bottom:0; width:3px; height:34px;
-    background:var(--amber-dim); border-radius:3px 3px 0 0;
-    cursor:pointer; transition:background .2s ease, height .2s ease;
-  }
-  .station-marker:hover, .station-marker.active{
-    background:var(--amber); height:44px;
-    box-shadow:0 0 10px rgba(255,179,71,0.7);
-  }
-  .station-marker.playing{background:var(--teal); box-shadow:0 0 10px rgba(45,212,191,0.7);}
-  .needle{
-    position:absolute; left:50%; top:0; bottom:0; width:2px;
-    background:var(--amber); box-shadow:0 0 12px rgba(255,179,71,0.9);
-    pointer-events:none; z-index:5;
-    transform:translateX(-1px);
-  }
-  .needle::before{
-    content:''; position:absolute; top:0; left:50%; transform:translateX(-50%);
-    width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent;
-    border-top:7px solid var(--amber);
-  }
-  .dial-hint{font-size:11px; color:var(--muted); margin-top:8px; letter-spacing:0.02em;}
-
-  /* ---------- Filters ---------- */
-  .filters{
-    padding:18px clamp(16px,4vw,40px) 4px;
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-  }
-  .chip-row{
-    display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; flex:1 1 auto;
-    scrollbar-width:thin;
-  }
-  .chip{
-    flex-shrink:0; font-family:'JetBrains Mono', monospace; font-size:12px;
-    padding:7px 14px; border-radius:999px; border:1px solid var(--line);
-    color:var(--muted); background:var(--panel); white-space:nowrap;
-    transition:all .15s ease;
-  }
-  .chip:hover{color:var(--text); border-color:#3A4152;}
-  .chip.active{background:var(--amber); color:#1a1200; border-color:var(--amber); font-weight:600;}
-  select#country-select{
-    background:var(--panel); border:1px solid var(--line); color:var(--text);
-    font-family:'JetBrains Mono', monospace; font-size:12px;
-    padding:8px 12px; border-radius:10px; flex-shrink:0;
-  }
-
-  /* ---------- Grid ---------- */
-  main{padding:20px clamp(16px,4vw,40px) 10px;}
-  .grid{
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr));
-    gap:14px;
-  }
-  .card{
-    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
-    padding:14px; display:flex; flex-direction:column; gap:10px;
-    transition:border-color .15s ease, transform .15s ease;
-  }
-  .card:hover{border-color:#3A4152; transform:translateY(-2px);}
-  .card.now-playing{border-color:var(--teal); box-shadow:0 0 0 1px var(--teal) inset;}
-  .card-top{display:flex; gap:10px; align-items:center;}
-  .cover{
-    width:46px; height:46px; border-radius:10px; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center;
-    font-weight:700; font-size:16px; color:#0A0C10; position:relative; overflow:hidden;
-  }
-  .cover img{width:100%; height:100%; object-fit:cover; position:absolute; inset:0;}
-  .card-title{min-width:0;}
-  .card-title .name{
-    font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis;
-    white-space:nowrap;
-  }
-  .card-title .sub{
-    font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--muted);
-    margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  }
-  .tag-row{display:flex; gap:5px; flex-wrap:wrap; min-height:20px;}
-  .tag-pill{
-    font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--muted);
-    background:var(--panel-2); padding:3px 8px; border-radius:6px;
-  }
-  .card-bottom{display:flex; align-items:center; justify-content:space-between; margin-top:auto;}
-  .signal-bars{display:flex; align-items:flex-end; gap:2px; height:14px;}
-  .signal-bars span{width:3px; background:var(--line); border-radius:1px;}
-  .signal-bars span:nth-child(1){height:30%;}
-  .signal-bars span:nth-child(2){height:55%;}
-  .signal-bars span:nth-child(3){height:75%;}
-  .signal-bars span:nth-child(4){height:100%;}
-  .card.strength-1 .signal-bars span:nth-child(1){background:var(--amber);}
-  .card.strength-2 .signal-bars span:nth-child(-n+2){background:var(--amber);}
-  .card.strength-3 .signal-bars span:nth-child(-n+3){background:var(--amber);}
-  .card.strength-4 .signal-bars span{background:var(--amber);}
-  .card-actions{display:flex; align-items:center; gap:6px;}
-  .icon-btn{
-    width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-    color:var(--muted); transition:all .15s ease;
-  }
-  .icon-btn:hover{background:var(--panel-2); color:var(--text);}
-  .icon-btn.play{background:var(--amber); color:#1a1200;}
-  .icon-btn.play:hover{background:var(--teal); color:#03211d;}
-  .icon-btn.like.active svg{fill:var(--danger); stroke:var(--danger);}
-
-  .load-more-wrap{display:flex; justify-content:center; padding:26px 0 10px;}
-  .load-more{
-    font-family:'JetBrains Mono', monospace; font-size:12px; letter-spacing:0.04em;
-    padding:11px 26px; border:1px solid var(--line); border-radius:999px; color:var(--text);
-    background:var(--panel);
-  }
-  .load-more:hover{border-color:var(--amber); color:var(--amber);}
-  .load-more:disabled{opacity:0.4;}
-
-  .state-msg{
-    text-align:center; padding:60px 20px; color:var(--muted);
-    font-family:'JetBrains Mono', monospace; font-size:13px; grid-column:1/-1;
-    display:flex; flex-direction:column; align-items:center; gap:14px;
-  }
-  .state-msg .retry{
-    padding:9px 20px; border:1px solid var(--line); border-radius:999px; color:var(--text);
-  }
-  .state-msg .retry:hover{border-color:var(--amber); color:var(--amber);}
-
-  /* ---------- Now playing bar ---------- */
-  .now-playing-bar{
-    position:fixed; left:0; right:0; bottom:0; z-index:50;
-    background:rgba(18,21,29,0.92); backdrop-filter:blur(14px);
-    border-top:1px solid var(--line);
-    display:flex; align-items:center; gap:14px;
-    padding:10px clamp(12px,3vw,32px);
-    transform:translateY(100%); transition:transform .3s ease;
-  }
-  .now-playing-bar.visible{transform:translateY(0);}
-  .np-cover{
-    width:44px; height:44px; border-radius:10px; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center; font-weight:700; color:#0A0C10;
-    position:relative; overflow:hidden;
-  }
-  .np-cover img{width:100%; height:100%; object-fit:cover; position:absolute; inset:0;}
-  .np-info{min-width:0; flex:1 1 160px;}
-  .np-info .name{font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .np-info .status{
-    font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--muted);
-    display:flex; align-items:center; gap:6px; margin-top:2px;
-  }
-  .np-info .status .dot{width:6px; height:6px; border-radius:50%; background:var(--teal); box-shadow:0 0 6px var(--teal);}
-  .np-eq{display:flex; align-items:flex-end; gap:2px; height:16px; margin-right:6px;}
-  .np-eq span{width:3px; background:var(--teal); border-radius:1px; animation:eq 0.9s ease-in-out infinite;}
-  .np-eq span:nth-child(1){animation-delay:0s; height:40%;}
-  .np-eq span:nth-child(2){animation-delay:.15s; height:100%;}
-  .np-eq span:nth-child(3){animation-delay:.3s; height:60%;}
-  .np-eq span:nth-child(4){animation-delay:.45s; height:80%;}
-  .np-eq.paused span{animation-play-state:paused; height:20% !important;}
-  @keyframes eq{0%,100%{height:20%;} 50%{height:100%;}}
-  .np-controls{display:flex; align-items:center; gap:8px;}
-  .np-controls .icon-btn.big{width:40px; height:40px;}
-  .np-volume{display:flex; align-items:center; gap:6px;}
-  .np-volume input[type="range"]{
-    width:80px; accent-color:var(--amber);
-  }
-  @media (max-width:640px){
-    .np-volume{display:none;}
-    .np-info .status{display:none;}
-  }
-
-  audio{display:none;}
-  #toast{
-    position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(10px);
-    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
-    padding:9px 18px; border-radius:999px; font-family:'JetBrains Mono', monospace; font-size:12px;
-    opacity:0; pointer-events:none; transition:all .25s ease; z-index:60; white-space:nowrap;
-  }
-  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
-</style>
-</head>
-<body>
-
-<header class="topbar">
-  <div class="logo">
-    <div class="mark"></div>
-    <div class="wordmark">SIGNAL<span>.</span></div>
-  </div>
-  <div class="search-wrap">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input id="search-input" type="text" placeholder="search stations, cities, anything on air…" autocomplete="off">
-  </div>
-  <div class="stats-readout" id="stats-readout">scanning directory…</div>
-  <button class="jam-btn" id="jam-toggle" aria-label="Jam with others">
-    <span class="pulse-dot"></span>
-    <span id="jam-btn-label">Jam</span>
-  </button>
-</header>
-
-<section class="jam-panel" id="jam-panel">
-  <div id="jam-panel-start">
-    <div class="jam-row">
-      <button class="jam-btn-solid" id="jam-create-btn">Start a jam</button>
-      <span class="jam-desc">Get a code. Anyone who joins with it hears whatever station you tune to, live.</span>
-    </div>
-    <div class="jam-row">
-      <input class="jam-input" id="jam-join-input" placeholder="CODE" maxlength="6">
-      <button class="jam-btn-outline safe" id="jam-join-btn">Join a jam</button>
-    </div>
-  </div>
-  <div id="jam-panel-active" style="display:none;">
-    <div class="jam-row">
-      <span class="jam-code-display" id="jam-code-display">——</span>
-      <div class="jam-divider"></div>
-      <span class="jam-listeners"><b id="jam-listener-count">1</b> tuned in</span>
-      <div class="jam-divider"></div>
-      <button class="jam-btn-outline safe" id="jam-copy-btn">Copy invite link</button>
-      <button class="jam-btn-outline" id="jam-leave-btn">Leave jam</button>
-    </div>
-    <div class="jam-row">
-      <span class="jam-desc">Whoever has this code follows every station change here in real time. Visible to anyone with the code.</span>
-    </div>
-  </div>
-</section>
-
-<section class="dial-section">
-  <div class="dial-header">
-    <h2>Tune the dial</h2>
-    <div class="lcd">
-      <span class="freq mono" id="lcd-freq">—.—</span>
-      <span class="name" id="lcd-name">no signal</span>
-      <button class="tune-btn" id="tune-btn" disabled>PLAY</button>
-    </div>
-  </div>
-  <div class="dial-frame">
-    <div class="dial-viewport" id="dial-viewport">
-      <div class="dial-strip" id="dial-strip"></div>
-    </div>
-    <div class="needle"></div>
-  </div>
-  <p class="dial-hint">Scroll the dial to browse this session's lineup by frequency — the marker under the needle lights up.</p>
-</section>
-
-<section class="filters">
-  <div class="chip-row" id="tag-chips">
-    <button class="chip active" data-tag="">All genres</button>
-  </div>
-  <select id="country-select">
-    <option value="">All countries</option>
-  </select>
-</section>
-
-<main>
-  <div class="grid" id="grid">
-    <div class="state-msg">scanning frequencies…</div>
-  </div>
-  <div class="load-more-wrap" id="load-more-wrap" style="display:none;">
-    <button class="load-more" id="load-more-btn">Load more stations</button>
-  </div>
-</main>
-
-<div class="now-playing-bar" id="now-playing-bar">
-  <div class="np-eq paused" id="np-eq"><span></span><span></span><span></span><span></span></div>
-  <div class="np-cover" id="np-cover"></div>
-  <div class="np-info">
-    <div class="name" id="np-name">—</div>
-    <div class="status"><span class="dot"></span><span id="np-status">stopped</span></div>
-  </div>
-  <div class="np-controls">
-    <button class="icon-btn" id="np-like" aria-label="Save station">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
-    </button>
-    <button class="icon-btn big play" id="np-playpause" aria-label="Play or pause">
-      <svg id="np-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>
-    </button>
-    <button class="icon-btn" id="np-shuffle" aria-label="Random station">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
-    </button>
-  </div>
-  <div class="np-volume">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 9 8 9 13 4 13 20 8 15 3 15"/><path d="M16 8a5 5 0 0 1 0 8"/></svg>
-    <input type="range" id="np-volume" min="0" max="100" value="80">
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<audio id="audio" preload="none"></audio>
-
-<script>
-(function(){
-  "use strict";
-
-  const MIRRORS = [
-    "https://de1.api.radio-browser.info",
-    "https://de2.api.radio-browser.info",
-    "https://at1.api.radio-browser.info",
-    "https://nl1.api.radio-browser.info"
-  ];
-  const PAGE_SIZE = 32;
-  const DIAL_MIN = 87.6, DIAL_MAX = 108.0, PX_PER_UNIT = 150;
-
-  const state = {
-    stations: [],
-    offset: 0,
-    filters: { name:"", tag:"", countrycode:"" },
-    favorites: [],
-    current: null,
-    isPlaying: false,
-    loading: false
-  };
-
-  const clientId = 'c' + Math.random().toString(36).slice(2, 10);
-  const jam = { code: null, pollTimer: null, listenerCount: 1 };
-
-  // ====== FIREBASE CONFIG — replace with your own project's values ======
-  // Firebase console → Project settings → Your apps → Web app → SDK config
-  const firebaseConfig = {
-    apiKey: "AIzaSyAX68had_Arj4e-pa6ZWWKV3lyj3m5mSyQ",
-    authDomain: "jamradio.firebaseapp.com",
-    projectId: "jamradio"
-  };
-  let fbReady = false;
-  let dbFs = null;
-  let authReadyPromise = null;
-  try{
-    if(window.firebase && firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY"){
-      firebase.initializeApp(firebaseConfig);
-      dbFs = firebase.firestore();
-      fbReady = true;
-      authReadyPromise = new Promise((resolve) => {
-        const unsub = firebase.auth().onAuthStateChanged((user) => {
-          if(user){ unsub(); resolve(user); }
-        });
-      });
-      firebase.auth().signInAnonymously().catch(() => { fbReady = false; });
-    }
-  }catch(e){ fbReady = false; }
-  async function ensureAuth(){
-    if(!fbReady) return false;
-    if(firebase.auth().currentUser) return true;
-    try{
-      await Promise.race([
-        authReadyPromise,
-        new Promise((_, rej) => setTimeout(() => rej(new Error('auth timeout')), 6000))
-      ]);
-      return true;
-    }catch(e){ return false; }
-  }
-  // =========================================================================
-
-  const el = (id) => document.getElementById(id);
-  const grid = el('grid');
-  const dialStrip = el('dial-strip');
-  const dialViewport = el('dial-viewport');
-  const audio = el('audio');
-  const toastEl = el('toast');
-
-  function toast(msg){
-    toastEl.textContent = msg;
-    toastEl.classList.add('show');
-    clearTimeout(toast._t);
-    toast._t = setTimeout(()=> toastEl.classList.remove('show'), 2600);
-  }
-
-  // ---------- API ----------
-  async function apiFetch(path){
-    let lastErr;
-    for(const base of MIRRORS){
-      try{
-        const res = await fetch(base + path);
-        if(!res.ok) throw new Error('bad status ' + res.status);
-        return await res.json();
-      }catch(e){ lastErr = e; }
-    }
-    throw lastErr || new Error('all mirrors failed');
-  }
-
-  // ---------- Storage (favorites) ----------
-  async function loadFavorites(){
-    try{
-      const r = await window.storage.get('favorites');
-      state.favorites = r ? JSON.parse(r.value) : [];
-    }catch(e){ state.favorites = []; }
-  }
-  async function saveFavorites(){
-    try{ await window.storage.set('favorites', JSON.stringify(state.favorites)); }
-    catch(e){ /* non-fatal */ }
-  }
-  function isFav(uuid){ return state.favorites.some(f => f.uuid === uuid); }
-  async function toggleFav(station){
-    if(isFav(station.stationuuid)){
-      state.favorites = state.favorites.filter(f => f.uuid !== station.stationuuid);
-      toast('Removed from saved');
-    } else {
-      state.favorites.push({ uuid: station.stationuuid, name: station.name, tags: station.tags, favicon: station.favicon, countrycode: station.countrycode });
-      toast('Saved to your list');
-    }
-    await saveFavorites();
-    document.querySelectorAll(`[data-uuid="${cssEscape(station.stationuuid)}"] .like`).forEach(b => b.classList.toggle('active', isFav(station.stationuuid)));
-    if(state.current && state.current.stationuuid === station.stationuuid){
-      el('np-like').classList.toggle('active', isFav(station.stationuuid));
-    }
-  }
-  function cssEscape(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&'); }
-
-  // ---------- Visual helpers ----------
-  function hashStr(s){
-    let h = 0;
-    for(let i=0;i<s.length;i++){ h = (h<<5)-h + s.charCodeAt(i); h |= 0; }
-    return Math.abs(h);
-  }
-  function gradientFor(name){
-    const h = hashStr(name || 'signal');
-    const h1 = h % 360, h2 = (h1 + 46) % 360;
-    return `linear-gradient(135deg, hsl(${h1} 70% 55%), hsl(${h2} 65% 40%))`;
-  }
-  function flagEmoji(cc){
-    if(!cc || !/^[A-Za-z]{2}$/.test(cc)) return '📻';
-    return cc.toUpperCase().replace(/./g, ch => String.fromCodePoint(127397 + ch.charCodeAt(0)));
-  }
-  function strengthClass(bitrate){
-    if(bitrate >= 192) return 'strength-4';
-    if(bitrate >= 128) return 'strength-3';
-    if(bitrate >= 64) return 'strength-2';
-    return 'strength-1';
-  }
-
-  // ---------- Rendering: cards ----------
-  function stationCard(s){
-    const card = document.createElement('div');
-    card.className = 'card ' + strengthClass(s.bitrate || 0);
-    card.dataset.uuid = s.stationuuid;
-    const tags = (s.tags || '').split(',').filter(Boolean).slice(0,2);
-    const initial = (s.name || '?').trim().charAt(0).toUpperCase();
-
-    card.innerHTML = `
-      <div class="card-top">
-        <div class="cover" style="background:${gradientFor(s.name)}">
-          ${s.favicon ? `<img src="${s.favicon}" alt="" loading="lazy" onerror="this.remove()">` : ''}
-          <span>${initial}</span>
-        </div>
-        <div class="card-title">
-          <div class="name">${escapeHtml(s.name || 'Untitled station')}</div>
-          <div class="sub">${flagEmoji(s.countrycode)} ${escapeHtml(s.country || 'unknown')} · ${s.bitrate || '—'}kbps</div>
-        </div>
-      </div>
-      <div class="tag-row">${tags.map(t => `<span class="tag-pill">${escapeHtml(t.trim())}</span>`).join('')}</div>
-      <div class="card-bottom">
-        <div class="signal-bars"><span></span><span></span><span></span><span></span></div>
-        <div class="card-actions">
-          <button class="icon-btn like ${isFav(s.stationuuid) ? 'active' : ''}" aria-label="Save station">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
-          </button>
-          <button class="icon-btn play" aria-label="Play station">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>
-          </button>
-        </div>
-      </div>
-    `;
-    card.querySelector('.like').addEventListener('click', (e) => { e.stopPropagation(); toggleFav(s); });
-    card.querySelector('.play').addEventListener('click', (e) => { e.stopPropagation(); playStation(s); });
-    return card;
-  }
-  function escapeHtml(str){
-    const d = document.createElement('div'); d.textContent = str; return d.innerHTML;
-  }
-
-  function renderGrid(list, append){
-    if(!append) grid.innerHTML = '';
-    if(list.length === 0 && !append){
-      grid.innerHTML = `<div class="state-msg">No frequency here. Try another name, genre, or country.</div>`;
-      el('load-more-wrap').style.display = 'none';
-      return;
-    }
-    const frag = document.createDocumentFragment();
-    list.forEach(s => frag.appendChild(stationCard(s)));
-    grid.appendChild(frag);
-    markNowPlayingCards();
-    el('load-more-wrap').style.display = list.length >= PAGE_SIZE ? 'flex' : 'none';
-  }
-
-  function markNowPlayingCards(){
-    document.querySelectorAll('.card').forEach(c => {
-      c.classList.toggle('now-playing', state.current && c.dataset.uuid === state.current.stationuuid);
-    });
-    document.querySelectorAll('.station-marker').forEach(m => {
-      m.classList.toggle('playing', state.current && m.dataset.uuid === state.current.stationuuid);
-    });
-  }
-
-  // ---------- Dial ----------
-  function buildDial(list){
-    dialStrip.innerHTML = '';
-    const range = DIAL_MAX - DIAL_MIN;
-    const width = range * PX_PER_UNIT;
-    dialStrip.style.width = width + 'px';
-
-    for(let f = DIAL_MIN; f <= DIAL_MAX + 0.001; f += 0.2){
-      const isMajor = Math.round(f * 10) % 10 === 0;
-      const t = document.createElement('div');
-      t.className = 'tick' + (isMajor ? ' major' : '');
-      t.style.left = ((f - DIAL_MIN) / range * width) + 'px';
-      dialStrip.appendChild(t);
-      if(isMajor){
-        const lbl = document.createElement('div');
-        lbl.className = 'tick-label';
-        lbl.style.left = ((f - DIAL_MIN) / range * width) + 'px';
-        lbl.textContent = f.toFixed(1);
-        dialStrip.appendChild(lbl);
-      }
-    }
-
-    const usable = list.slice(0, 60);
-    usable.forEach((s, i) => {
-      const freq = usable.length > 1 ? DIAL_MIN + (range * i / (usable.length - 1)) : (DIAL_MIN + DIAL_MAX) / 2;
-      s.__freq = freq;
-      const m = document.createElement('div');
-      m.className = 'station-marker';
-      m.dataset.uuid = s.stationuuid;
-      m.style.left = ((freq - DIAL_MIN) / range * width) + 'px';
-      m.title = s.name;
-      m.addEventListener('click', () => centerOnStation(s, true));
-      dialStrip.appendChild(m);
-    });
-
-    state.dialWidth = width;
-    state.dialList = usable;
-    if(usable.length){
-      requestAnimationFrame(() => centerOnStation(usable[0], false));
-    }
-  }
-
-  function centerOnStation(s, autoplay){
-    const range = DIAL_MAX - DIAL_MIN;
-    const x = (s.__freq - DIAL_MIN) / range * state.dialWidth;
-    dialViewport.scrollTo({ left: x - dialViewport.clientWidth / 2, behavior: 'smooth' });
-    if(autoplay) playStation(s);
-  }
-
-  function nearestToCenter(){
-    if(!state.dialList || !state.dialList.length) return null;
-    const centerX = dialViewport.scrollLeft + dialViewport.clientWidth / 2;
-    const range = DIAL_MAX - DIAL_MIN;
-    const centerFreq = DIAL_MIN + (centerX / state.dialWidth) * range;
-    let best = null, bestDist = Infinity;
-    state.dialList.forEach(s => {
-      const d = Math.abs(s.__freq - centerFreq);
-      if(d < bestDist){ bestDist = d; best = s; }
-    });
-    return { station: best, freq: centerFreq };
-  }
-
-  let dialRaf = null;
-  dialViewport.addEventListener('scroll', () => {
-    if(dialRaf) return;
-    dialRaf = requestAnimationFrame(() => {
-      dialRaf = null;
-      const res = nearestToCenter();
-      if(!res || !res.station) return;
-      el('lcd-freq').textContent = res.freq.toFixed(1);
-      el('lcd-name').textContent = res.station.name;
-      el('tune-btn').disabled = false;
-      el('tune-btn').onclick = () => playStation(res.station);
-      document.querySelectorAll('.station-marker').forEach(m => {
-        m.classList.toggle('active', m.dataset.uuid === res.station.stationuuid);
-      });
-    });
-  });
-
-  // ---------- Jam (listen together) ----------
-  let jamStationUnsub = null, jamPresenceUnsub = null, jamHeartbeatTimer = null;
-
-  function genJamCode(){
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let c = '';
-    for(let i=0;i<5;i++) c += chars[Math.floor(Math.random() * chars.length)];
-    return c;
-  }
-  function slimStation(s){
-    return {
-      stationuuid:s.stationuuid, name:s.name, favicon:s.favicon||'',
-      tags:s.tags||'', countrycode:s.countrycode||'', country:s.country||'',
-      url:s.url||'', url_resolved:s.url_resolved||'', bitrate:s.bitrate||0
-    };
-  }
-  function jamDoc(){ return dbFs.collection('jams').doc(jam.code); }
-  function myPresenceDoc(){ return jamDoc().collection('presence').doc(clientId); }
-
-  async function writeJamStation(station){
-    if(!jam.code || !fbReady) return;
-    try{
-      await jamDoc().set({
-        station: station ? slimStation(station) : null,
-        updatedAt: Date.now(),
-        updatedBy: clientId
-      }, { merge: true });
-    }catch(e){ /* non-fatal */ }
-  }
-  function removePresenceOnce(){
-    if(jam.code && fbReady){
-      myPresenceDoc().delete().catch(() => {});
-    }
-  }
-  function attachJamListeners(){
-    detachJamListeners();
-
-    jamStationUnsub = jamDoc().onSnapshot((doc) => {
-      const data = doc.data();
-      if(data && data.station && data.updatedBy !== clientId){
-        if(!state.current || state.current.stationuuid !== data.station.stationuuid){
-          playStation(data.station, false, false);
-        }
-      }
-    });
-
-    myPresenceDoc().set({ lastSeen: Date.now() }).catch(() => {});
-    jamHeartbeatTimer = setInterval(() => {
-      myPresenceDoc().set({ lastSeen: Date.now() }).catch(() => {});
-    }, 10000);
-
-    jamPresenceUnsub = jamDoc().collection('presence').onSnapshot((snap) => {
-      const now = Date.now();
-      let active = 0;
-      snap.forEach((d) => {
-        const v = d.data();
-        if(v && now - v.lastSeen < 25000) active++;
-      });
-      jam.listenerCount = Math.max(active, 1);
-      el('jam-listener-count').textContent = jam.listenerCount;
-    });
-
-    window.addEventListener('beforeunload', removePresenceOnce);
-  }
-  function detachJamListeners(){
-    if(jamStationUnsub) jamStationUnsub();
-    if(jamPresenceUnsub) jamPresenceUnsub();
-    if(jamHeartbeatTimer) clearInterval(jamHeartbeatTimer);
-    removePresenceOnce();
-    window.removeEventListener('beforeunload', removePresenceOnce);
-    jamStationUnsub = jamPresenceUnsub = jamHeartbeatTimer = null;
-  }
-  function renderJamActive(){
-    el('jam-panel-start').style.display = 'none';
-    el('jam-panel-active').style.display = 'block';
-    el('jam-code-display').textContent = jam.code;
-    el('jam-toggle').classList.add('active');
-    el('jam-btn-label').textContent = jam.code;
-    el('jam-panel').classList.add('open');
-  }
-  function renderJamStart(){
-    el('jam-panel-start').style.display = 'block';
-    el('jam-panel-active').style.display = 'none';
-    el('jam-toggle').classList.remove('active');
-    el('jam-btn-label').textContent = 'Jam';
-  }
-  async function createJam(){
-    if(!fbReady){ toast('Add your Firebase config in the code first'); return; }
-    const ok = await ensureAuth();
-    if(!ok){ toast('Could not sign in — check Firebase Auth setup'); return; }
-    jam.code = genJamCode();
-    attachJamListeners();
-    await writeJamStation(state.current);
-    renderJamActive();
-    toast('Jam started — share the code');
-  }
-  async function joinJam(rawCode){
-    if(!fbReady){ toast('Add your Firebase config in the code first'); return; }
-    const code = (rawCode || '').trim().toUpperCase();
-    if(!code) return;
-    const ok = await ensureAuth();
-    if(!ok){ toast('Could not sign in — check Firebase Auth setup'); return; }
-    jam.code = code;
-    attachJamListeners();
-    renderJamActive();
-    toast('Joined jam ' + code);
-  }
-  async function leaveJam(){
-    detachJamListeners();
-    jam.code = null;
-    renderJamStart();
-    toast('Left the jam');
-  }
-
-  el('jam-toggle').addEventListener('click', () => el('jam-panel').classList.toggle('open'));
-  el('jam-create-btn').addEventListener('click', createJam);
-  el('jam-join-btn').addEventListener('click', () => joinJam(el('jam-join-input').value));
-  el('jam-join-input').addEventListener('keydown', (e) => { if(e.key === 'Enter') joinJam(el('jam-join-input').value); });
-  el('jam-leave-btn').addEventListener('click', leaveJam);
-  el('jam-copy-btn').addEventListener('click', async () => {
-    const link = location.href.split('?')[0] + '?jam=' + jam.code;
-    try{
-      await navigator.clipboard.writeText(link);
-      toast('Link copied');
-    }catch(e){
-      toast('Code: ' + jam.code + ' — copy it manually');
-    }
-  });
-
-  // ---------- Player ----------
-  function setEqPlaying(playing){
-    el('np-eq').classList.toggle('paused', !playing);
-    el('np-icon').innerHTML = playing
-      ? '<rect x="5" y="4" width="5" height="16"/><rect x="14" y="4" width="5" height="16"/>'
-      : '<polygon points="6,4 20,12 6,20"/>';
-  }
-
-  // Some stations resolve to a .pls/.m3u/.m3u8 playlist file rather than a
-  // direct audio stream. <audio> can't play those directly, so we fetch and
-  // parse them to pull out the real stream URL underneath.
-  function looksLikePlaylist(url){
-    return /\.(pls|m3u8?|xspf)(\?|$)/i.test(url);
-  }
-  function parsePlaylistText(text, type){
-    if(type === 'xspf'){
-      const match = text.match(/<location>(.*?)<\/location>/i);
-      return match ? match[1].trim() : null;
-    }
-    // .pls format: File1=http://...
-    const plsMatch = text.match(/File\d*\s*=\s*(\S+)/i);
-    if(plsMatch) return plsMatch[1].trim();
-    // .m3u/.m3u8 format: first non-comment line
-    const line = text.split(/\r?\n/).find(l => l.trim() && !l.trim().startsWith('#'));
-    return line ? line.trim() : null;
-  }
-  async function resolvePlaylist(url, depth){
-    if(depth > 2 || !looksLikePlaylist(url)) return url;
-    try{
-      const res = await fetch(url);
-      const text = await res.text();
-      const type = /\.pls/i.test(url) ? 'pls' : /\.xspf/i.test(url) ? 'xspf' : 'm3u';
-      const inner = parsePlaylistText(text, type);
-      if(inner) return resolvePlaylist(inner, depth + 1);
-    }catch(e){ /* CORS or network issue reading the playlist — fall through */ }
-    return url;
-  }
-
-  async function attemptPlay(streamUrl){
-    const resolved = await resolvePlaylist(streamUrl, 0);
-    audio.src = resolved;
-    await audio.play();
-  }
-
-  async function playStation(s, isRetry, broadcast){
-    if(broadcast === undefined) broadcast = true;
-    if(!isRetry){
-      state.current = s;
-      const bar = el('now-playing-bar');
-      bar.classList.add('visible');
-      el('np-name').textContent = s.name;
-      el('np-cover').style.background = gradientFor(s.name);
-      el('np-cover').innerHTML = s.favicon ? `<img src="${s.favicon}" onerror="this.remove()">` : '';
-      el('np-like').classList.toggle('active', isFav(s.stationuuid));
-      markNowPlayingCards();
-    }
-    el('np-status').textContent = 'connecting…';
-
-    let streamUrl = s.url_resolved || s.url;
-    try{
-      const resolved = await apiFetch(`/json/url/${encodeURIComponent(s.stationuuid)}`);
-      if(resolved && resolved.url) streamUrl = resolved.url;
-    }catch(e){ /* fall back to known url */ }
-
-    try{
-      await attemptPlay(streamUrl);
-      state.isPlaying = true;
-      el('np-status').textContent = 'on air';
-      setEqPlaying(true);
-      if(broadcast && jam.code) writeJamStation(s);
-    }catch(e){
-      el('np-status').textContent = "couldn't tune this one";
-      setEqPlaying(false);
-      state.isPlaying = false;
-      toast('Signal lost — this station is offline. Try another.');
-    }
-  }
-
-  audio.addEventListener('error', () => {
-    if(state.current && state.isPlaying){
-      el('np-status').textContent = 'no signal';
-      setEqPlaying(false);
-      state.isPlaying = false;
-      toast('Signal lost — this station is offline. Try another.');
-    }
-  });
-
-  el('np-playpause').addEventListener('click', () => {
-    if(!state.current) return;
-    if(state.isPlaying){
-      audio.pause();
-      state.isPlaying = false;
-      el('np-status').textContent = 'paused';
-      setEqPlaying(false);
-    } else {
-      audio.play().then(() => {
-        state.isPlaying = true;
-        el('np-status').textContent = 'on air';
-        setEqPlaying(true);
-      }).catch(() => toast('Signal lost — try another station'));
-    }
-  });
-
-  el('np-like').addEventListener('click', () => { if(state.current) toggleFav(state.current); });
-
-  el('np-shuffle').addEventListener('click', () => {
-    if(!state.stations.length) return;
-    const pick = state.stations[Math.floor(Math.random() * state.stations.length)];
-    playStation(pick);
-  });
-
-  el('np-volume').addEventListener('input', (e) => {
-    audio.volume = e.target.value / 100;
-  });
-  audio.volume = 0.8;
-
-  // ---------- Fetch + filters ----------
-  function buildQuery(){
-    const p = new URLSearchParams();
-    if(state.filters.name) p.set('name', state.filters.name);
-    if(state.filters.tag) p.set('tag', state.filters.tag);
-    if(state.filters.countrycode) p.set('countrycode', state.filters.countrycode);
-    p.set('order', 'clickcount');
-    p.set('reverse', 'true');
-    p.set('hidebroken', 'true');
-    p.set('limit', PAGE_SIZE);
-    p.set('offset', state.offset);
-    return p.toString();
-  }
-
-  async function fetchStations(reset){
-    if(state.loading) return;
-    state.loading = true;
-    if(reset){
-      state.offset = 0;
-      grid.innerHTML = `<div class="state-msg">scanning frequencies…</div>`;
-    }
-    try{
-      const results = await apiFetch('/json/stations/search?' + buildQuery());
-      if(reset) state.stations = results; else state.stations = state.stations.concat(results);
-      renderGrid(results, !reset);
-      if(reset) buildDial(results);
-      state.offset += PAGE_SIZE;
-    }catch(e){
-      grid.innerHTML = `
-        <div class="state-msg">
-          Signal lost. The station directory isn't responding — check your connection and try again.
-          <button class="retry" id="retry-btn">Retry</button>
-        </div>`;
-      const rb = document.getElementById('retry-btn');
-      if(rb) rb.addEventListener('click', () => fetchStations(true));
-    } finally {
-      state.loading = false;
-    }
-  }
-
-  el('load-more-btn').addEventListener('click', () => fetchStations(false));
-
-  // ---------- Search ----------
-  let searchDebounce;
-  el('search-input').addEventListener('input', (e) => {
-    clearTimeout(searchDebounce);
-    const val = e.target.value.trim();
-    searchDebounce = setTimeout(() => {
-      state.filters.name = val;
-      fetchStations(true);
-    }, 420);
-  });
-
-  // ---------- Tags ----------
-  async function loadTags(){
-    try{
-      const tags = await apiFetch('/json/tags?order=stationcount&reverse=true&limit=18&hidebroken=true');
-      const row = el('tag-chips');
-      tags.forEach(t => {
-        if(!t.name || t.name.length > 16) return;
-        const chip = document.createElement('button');
-        chip.className = 'chip';
-        chip.dataset.tag = t.name;
-        chip.textContent = t.name;
-        row.appendChild(chip);
-      });
-      row.addEventListener('click', (e) => {
-        const btn = e.target.closest('.chip');
-        if(!btn) return;
-        row.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        state.filters.tag = btn.dataset.tag;
-        fetchStations(true);
-      });
-    }catch(e){ /* chips are enhancement only */ }
-  }
-
-  // ---------- Countries ----------
-  async function loadCountries(){
-    try{
-      const countries = await apiFetch('/json/countries');
-      const sorted = countries
-        .filter(c => c.iso_3166_1 && c.name)
-        .sort((a,b) => (b.stationcount||0) - (a.stationcount||0))
-        .slice(0, 45);
-      const sel = el('country-select');
-      sorted.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.iso_3166_1;
-        opt.textContent = `${flagEmoji(c.iso_3166_1)} ${c.name} (${c.stationcount})`;
-        sel.appendChild(opt);
-      });
-      sel.addEventListener('change', () => {
-        state.filters.countrycode = sel.value;
-        fetchStations(true);
-      });
-    }catch(e){ /* enhancement only */ }
-  }
-
-  // ---------- Stats ----------
-  async function loadStats(){
-    try{
-      const s = await apiFetch('/json/stats');
-      el('stats-readout').innerHTML = `<b>${s.stations.toLocaleString()}</b> stations on air<br>${s.countries} countries`;
-    }catch(e){
-      el('stats-readout').textContent = '20,000+ stations worldwide';
-    }
-  }
-
-  // ---------- Init ----------
-  (async function init(){
-    await loadFavorites();
-    loadStats();
-    loadTags();
-    loadCountries();
-    await fetchStations(true);
-
-    const jamParam = new URLSearchParams(location.search).get('jam');
-    if(jamParam) joinJam(jamParam);
-  })();
-
-})();
-</script>
-</body>
-</html>
+  .tic
